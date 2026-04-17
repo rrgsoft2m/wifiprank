@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>⚠️ XAVFSIZLIK OGOHLANTIRISHI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Matrix rain canvas */
+    #matrix-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.15;
+    }
+
+    /* Scan line effect */
+    .scanlines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 0, 0.03) 2px,
+        rgba(0, 255, 0, 0.03) 4px
+      );
+    }
+
+    /* Glitch overlay */
+    .glitch-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+      animation: glitchOverlay 8s infinite;
+    }
+
+    @keyframes glitchOverlay {
+      0%, 90%, 100% { opacity: 0; }
+      91% { 
+        opacity: 1; 
+        background: rgba(255, 0, 0, 0.05);
+        transform: translateX(-2px);
+      }
+      92% { 
+        opacity: 1;
+        background: rgba(0, 255, 0, 0.05);
+        transform: translateX(2px);
+      }
+      93% { opacity: 0; }
+    }
+
+    /* Main container */
+    .container {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(12px, 4vw, 40px);
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Phase 1: Loading/Hacking screen */
+    #phase-loading {
+      text-align: center;
+      transition: opacity 0.5s;
+    }
+
+    .skull-icon {
+      font-size: clamp(50px, 12vw, 80px);
+      animation: pulse 1.5s ease-in-out infinite;
+      filter: drop-shadow(0 0 30px rgba(255, 0, 0, 0.8));
+      margin-bottom: clamp(10px, 3vw, 20px);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .loading-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(10px, 2.5vw, 14px);
+      color: #00ff41;
+      margin-bottom: clamp(15px, 4vw, 30px);
+      letter-spacing: clamp(1px, 0.5vw, 2px);
+      text-transform: uppercase;
+    }
+
+    .terminal-box {
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid #00ff41;
+      border-radius: clamp(6px, 1.5vw, 8px);
+      padding: clamp(12px, 3vw, 20px);
+      max-width: 500px;
+      width: 100%;
+      text-align: left;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(9px, 2vw, 12px);
+      color: #00ff41;
+      box-shadow: 0 0 30px rgba(0, 255, 65, 0.2), inset 0 0 30px rgba(0, 255, 65, 0.05);
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+    }
+
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #28c840; }
+
+    .terminal-title {
+      margin-left: 8px;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .log-line {
+      margin-bottom: clamp(2px, 0.5vw, 4px);
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    .log-line .prefix {
+      color: #ff3333;
+    }
+
+    .log-line .success {
+      color: #00ff41;
+    }
+
+    .log-line .warning {
+      color: #ffbd2e;
+    }
+
+    .log-line .info {
+      color: #00bfff;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(0, 255, 65, 0.1);
+      border-radius: 2px;
+      margin-top: 15px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff41, #ff3333);
+      width: 0%;
+      transition: width 0.5s ease;
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    }
+
+    /* Phase 2: Main warning */
+    #phase-warning {
+      display: none;
+      text-align: center;
+      animation: fadeInUp 0.8s ease-out;
+      width: 100%;
+      padding-bottom: 30px;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .warning-icon {
+      font-size: clamp(60px, 15vw, 100px);
+      animation: warningPulse 1s ease-in-out infinite;
+      filter: drop-shadow(0 0 40px rgba(255, 0, 0, 0.8));
+    }
+
+    @keyframes warningPulse {
+      0%, 100% { 
+        transform: scale(1);
+        filter: drop-shadow(0 0 40px rgba(255, 0, 0, 0.8));
+      }
+      50% { 
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 60px rgba(255, 0, 0, 1));
+      }
+    }
+
+    .main-title {
+      font-size: clamp(28px, 6vw, 52px);
+      font-weight: 900;
+      margin-top: 20px;
+      background: linear-gradient(135deg, #ff0000, #ff4444, #ff0000);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      animation: textGlitch 3s infinite;
+      line-height: 1.2;
+    }
+
+    @keyframes textGlitch {
+      0%, 95%, 100% { 
+        transform: none;
+        text-shadow: none;
+      }
+      96% { 
+        transform: translateX(-3px) skewX(-2deg);
+      }
+      97% { 
+        transform: translateX(3px) skewX(2deg);
+      }
+      98% {
+        transform: translateX(-1px);
+      }
+    }
+
+    .sub-title {
+      font-size: clamp(14px, 3vw, 20px);
+      color: #ff6666;
+      margin-top: 15px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .info-card {
+      background: rgba(255, 0, 0, 0.08);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      border-radius: clamp(10px, 3vw, 16px);
+      padding: clamp(14px, 4vw, 25px);
+      margin-top: clamp(16px, 4vw, 30px);
+      max-width: 450px;
+      width: 100%;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 40px rgba(255, 0, 0, 0.1);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(6px, 1.5vw, 10px) 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: clamp(12px, 2.5vw, 14px);
+      gap: 8px;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: #888;
+      font-size: clamp(11px, 2.2vw, 13px);
+      white-space: nowrap;
+    }
+
+    .info-value {
+      color: #ff4444;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(11px, 2.2vw, 13px);
+      font-weight: 700;
+      text-align: right;
+      word-break: break-all;
+    }
+
+    .info-value.blink {
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .stolen-data {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 0, 0, 0.2);
+      border-radius: clamp(8px, 2vw, 12px);
+      padding: clamp(12px, 3vw, 20px);
+      margin-top: clamp(12px, 3vw, 20px);
+      max-width: 450px;
+      width: 100%;
+    }
+
+    .stolen-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #ff3333;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .data-item {
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 1.5vw, 10px);
+      padding: clamp(5px, 1.2vw, 8px) 0;
+      font-size: clamp(11px, 2.3vw, 13px);
+      color: #ccc;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .data-item:last-child {
+      border-bottom: none;
+    }
+
+    .data-icon {
+      font-size: 16px;
+    }
+
+    .countdown {
+      margin-top: clamp(15px, 3vw, 25px);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(11px, 2.3vw, 13px);
+      color: #ff4444;
+      animation: blink 0.8s infinite;
+    }
+
+    /* Phase 3: Just kidding reveal */
+    #phase-reveal {
+      display: none;
+      text-align: center;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .reveal-icon {
+      font-size: clamp(60px, 15vw, 100px);
+      animation: bounce 1s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+
+    .reveal-title {
+      font-size: clamp(28px, 6vw, 48px);
+      font-weight: 900;
+      margin-top: 20px;
+      background: linear-gradient(135deg, #00ff87, #60efff, #00ff87);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% auto;
+      animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+      to { background-position: 200% center; }
+    }
+
+    .reveal-subtitle {
+      font-size: clamp(16px, 3vw, 22px);
+      color: #aaa;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+
+    .reveal-message {
+      background: rgba(0, 255, 135, 0.08);
+      border: 1px solid rgba(0, 255, 135, 0.3);
+      border-radius: clamp(10px, 3vw, 16px);
+      padding: clamp(16px, 4vw, 25px);
+      margin-top: clamp(16px, 4vw, 30px);
+      max-width: 420px;
+      width: 100%;
+      font-size: clamp(13px, 3vw, 16px);
+      color: #ccc;
+      line-height: 1.7;
+      backdrop-filter: blur(10px);
+    }
+
+    .reveal-message strong {
+      color: #00ff87;
+    }
+
+    .reveal-emoji {
+      font-size: 40px;
+      margin-top: 25px;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-ok {
+      margin-top: clamp(16px, 4vw, 30px);
+      padding: clamp(10px, 2.5vw, 14px) clamp(30px, 8vw, 50px);
+      background: linear-gradient(135deg, #00ff87, #60efff);
+      color: #0a0a0a;
+      border: none;
+      border-radius: 50px;
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(14px, 3vw, 16px);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-ok:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(0, 255, 135, 0.4);
+    }
+
+    .btn-ok:active {
+      transform: scale(0.95);
+    }
+
+    /* ==========================================
+       RESPONSIVE MEDIA QUERIES
+       ========================================== */
+
+    /* Small phones (320px - 374px) */
+    @media (max-width: 374px) {
+      .container {
+        padding: 10px 8px;
+        justify-content: flex-start;
+        padding-top: 30px;
+      }
+      .terminal-box {
+        padding: 10px;
+        font-size: 8px;
+        max-height: 40vh;
+      }
+      .terminal-title {
+        font-size: 8px;
+      }
+      .terminal-dot {
+        width: 7px;
+        height: 7px;
+      }
+      .info-card {
+        padding: 10px;
+      }
+      .stolen-data {
+        padding: 10px;
+      }
+      .data-item span {
+        font-size: 10px;
+      }
+    }
+
+    /* Regular phones (375px - 480px) */
+    @media (min-width: 375px) and (max-width: 480px) {
+      .container {
+        padding: 14px 12px;
+      }
+    }
+
+    /* Large phones / small tablets landscape (481px - 768px) */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+      .terminal-box {
+        max-width: 90%;
+      }
+    }
+
+    /* Tablets (769px - 1024px) */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .container {
+        padding: 30px;
+      }
+      .terminal-box {
+        max-width: 550px;
+      }
+      .info-card,
+      .stolen-data {
+        max-width: 500px;
+      }
+    }
+
+    /* Desktop (1025px+) */
+    @media (min-width: 1025px) {
+      .container {
+        padding: 40px;
+      }
+      .terminal-box {
+        max-width: 600px;
+        font-size: 13px;
+      }
+      .info-card,
+      .stolen-data {
+        max-width: 520px;
+      }
+      .reveal-message {
+        max-width: 500px;
+      }
+    }
+
+    /* Landscape phones */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .container {
+        justify-content: flex-start;
+        padding-top: 10px;
+      }
+      .skull-icon {
+        font-size: 40px;
+        margin-bottom: 8px;
+      }
+      .warning-icon {
+        font-size: 50px;
+      }
+      .reveal-icon {
+        font-size: 50px;
+      }
+      .main-title {
+        font-size: 28px;
+        margin-top: 8px;
+      }
+      .info-card {
+        padding: 10px;
+        margin-top: 10px;
+      }
+      .info-row {
+        padding: 4px 0;
+      }
+      .stolen-data {
+        margin-top: 10px;
+        padding: 10px;
+      }
+      .terminal-box {
+        max-height: 35vh;
+      }
+    }
+
+    /* Safe area for notched phones */
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+
+    /* Floating particles */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: #ff0000;
+      border-radius: 50%;
+      animation: float linear infinite;
+      opacity: 0.6;
+    }
+
+    .particle.green {
+      background: #00ff41;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+      }
+      10% { opacity: 0.6; }
+      90% { opacity: 0.6; }
+      100% {
+        transform: translateY(-10vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    /* Audio warning flash */
+    .flash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 0, 0, 0.2);
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0;
+      animation: flash 0.15s ease-out;
+    }
+
+    @keyframes flash {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Matrix rain -->
+  <canvas id="matrix-canvas"></canvas>
+  
+  <!-- Scan lines -->
+  <div class="scanlines"></div>
+  
+  <!-- Glitch overlay -->
+  <div class="glitch-overlay"></div>
+
+  <!-- Floating particles -->
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    
+    <!-- PHASE 1: Fake hacking loading -->
+    <div id="phase-loading">
+      <div class="skull-icon">💀</div>
+      <div class="loading-title" id="loading-title">Qurilma skanerlanmoqda...</div>
+      
+      <div class="terminal-box">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">root@hacker:~#</span>
+        </div>
+        <div id="terminal-log"></div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 2: Main warning -->
+    <div id="phase-warning">
+      <div class="warning-icon">🚨</div>
+      <h1 class="main-title">Siz Hack<br>Qilindingiz!</h1>
+      <p class="sub-title">⚠️ Qurilmangiz hacker nazoratiga olindi</p>
+
+      <div class="info-card">
+        <div class="info-row">
+          <span class="info-label">📱 Qurilma</span>
+          <span class="info-value" id="device-name">Aniqlanmoqda...</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">🌐 IP Manzil</span>
+          <span class="info-value" id="ip-address">Aniqlanmoqda...</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">🔋 Batareya</span>
+          <span class="info-value" id="battery-level">Aniqlanmoqda...</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">📍 Joylashuv</span>
+          <span class="info-value blink">O'zbekiston 🇺🇿</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">🔐 Holat</span>
+          <span class="info-value blink" style="color: #ff0000;">XAVF OSTIDA</span>
+        </div>
+      </div>
+
+      <div class="stolen-data">
+        <div class="stolen-title">📂 Olingan ma'lumotlar:</div>
+        <div class="data-item">
+          <span class="data-icon">📸</span>
+          <span>Rasmlar va videolar — <strong style="color:#ff4444">ko'chirilmoqda...</strong></span>
+        </div>
+        <div class="data-item">
+          <span class="data-icon">💬</span>
+          <span>Xabarlar va chatlar — <strong style="color:#ff4444">o'qilmoqda...</strong></span>
+        </div>
+        <div class="data-item">
+          <span class="data-icon">📞</span>
+          <span>Kontaktlar — <strong style="color:#ff4444">yuklanmoqda...</strong></span>
+        </div>
+        <div class="data-item">
+          <span class="data-icon">🔑</span>
+          <span>Parollar — <strong style="color:#ff4444">shifrlanmoqda...</strong></span>
+        </div>
+      </div>
+
+      <div class="countdown" id="countdown">
+        🔴 Ma'lumotlar serverga yuborilmoqda... 00:<span id="timer">30</span>
+      </div>
+    </div>
+
+    <!-- PHASE 3: Just kidding! -->
+    <div id="phase-reveal">
+      <div class="reveal-icon">😂</div>
+      <h1 class="reveal-title">HAZIL EDI!</h1>
+      <p class="reveal-subtitle">Hech narsa bo'lgani yo'q 🎉</p>
+
+      <div class="reveal-message">
+        <strong>Xotirjam bo'ling!</strong> Bu shunchaki WiFi orqali qilingan kulgili hazil.<br><br>
+        Sizning telefoningiz xavfsiz ✅<br>
+        Hech qanday ma'lumot olinmagan ✅<br>
+        Parollaringiz joyida ✅<br><br>
+        <strong>Lekin...</strong> ommaviy WiFi ga ulanayotganda ehtiyot bo'ling! 😉
+      </div>
+
+      <div class="reveal-emoji">🎊</div>
+
+      <button class="btn-ok" onclick="window.location.href='https://t.me/rrgfcoder'">Tushunarli 👍</button>
+
+      <div style="margin-top: 40px; font-size: 12px; color: #444; font-weight: 500; letter-spacing: 0.5px;">
+        🛡️ <a href="https://t.me/rrgfcoder" target="_blank" style="color: #555; text-decoration: none; transition: color 0.3s;">RRGSOFT</a> kompaniyasi tomonidan ishlab chiqilgan
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // MATRIX RAIN EFFECT
+    // ============================================
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF';
+    const fontSize = 14;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.fillStyle = '#00ff41';
+      ctx.font = fontSize + 'px monospace';
+      
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+
+    setInterval(drawMatrix, 50);
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // ============================================
+    // FLOATING PARTICLES
+    // ============================================
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle' + (Math.random() > 0.5 ? ' green' : '');
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.animationDuration = (Math.random() * 8 + 4) + 's';
+      particle.style.animationDelay = Math.random() * 5 + 's';
+      particle.style.width = (Math.random() * 3 + 1) + 'px';
+      particle.style.height = particle.style.width;
+      particlesContainer.appendChild(particle);
+    }
+
+    // ============================================
+    // DETECT DEVICE INFO (harmless browser info)
+    // ============================================
+    function getDeviceName() {
+      const ua = navigator.userAgent;
+      if (/iPhone/.test(ua)) return 'iPhone 📱';
+      if (/iPad/.test(ua)) return 'iPad 📱';
+      if (/Android/.test(ua)) {
+        const match = ua.match(/;\s*(.*?)\s*Build/);
+        return match ? match[1] : 'Android 📱';
+      }
+      if (/Mac/.test(ua)) return 'MacBook 💻';
+      if (/Windows/.test(ua)) return 'Windows PC 💻';
+      return 'Noma\'lum qurilma';
+    }
+
+    function generateFakeIP() {
+      return '192.168.' + Math.floor(Math.random() * 255) + '.' + Math.floor(Math.random() * 254 + 1);
+    }
+
+    async function getBattery() {
+      try {
+        if (navigator.getBattery) {
+          const battery = await navigator.getBattery();
+          return Math.floor(battery.level * 100) + '%';
+        }
+      } catch (e) {}
+      return Math.floor(Math.random() * 60 + 30) + '%';
+    }
+
+    // ============================================
+    // PHASE 1: FAKE TERMINAL LOGS
+    // ============================================
+    const terminalLog = document.getElementById('terminal-log');
+    const progressFill = document.getElementById('progress-fill');
+
+    const logs = [
+      { text: '<span class="prefix">[SCAN]</span> Tarmoq skanerlanmoqda...', delay: 800 },
+      { text: '<span class="success">[OK]</span> Qurilma topildi: <span class="info">' + getDeviceName() + '</span>', delay: 1000 },
+      { text: '<span class="prefix">[HACK]</span> MAC manzili olinmoqda...', delay: 800 },
+      { text: '<span class="success">[OK]</span> MAC: <span class="info">A4:83:E7:' + Math.random().toString(16).substr(2, 8).toUpperCase().match(/.{2}/g).join(':') + '</span>', delay: 600 },
+      { text: '<span class="prefix">[SCAN]</span> Ochiq portlar tekshirilmoqda...', delay: 1200 },
+      { text: '<span class="warning">[!]</span> Port 443 — OCHIQ', delay: 400 },
+      { text: '<span class="warning">[!]</span> Port 80 — OCHIQ', delay: 300 },
+      { text: '<span class="warning">[!]</span> Port 22 — OCHIQ', delay: 300 },
+      { text: '<span class="prefix">[EXPLOIT]</span> Zaiflik topildi: CVE-2024-XXXX', delay: 1000 },
+      { text: '<span class="success">[OK]</span> Ekspluatatsiya muvaffaqiyatli!', delay: 800 },
+      { text: '<span class="prefix">[ACCESS]</span> Root kirish olinmoqda...', delay: 1500 },
+      { text: '<span class="success">[ROOT]</span> <span style="color:#ff3333">To\'liq kirish olingan! 🔓</span>', delay: 1000 },
+      { text: '<span class="prefix">[DATA]</span> Ma\'lumotlar yuklanmoqda...', delay: 800 },
+      { text: '<span class="success">[100%]</span> <span style="color:#ff3333">QURILMA NAZORAT OSTIDA ☠️</span>', delay: 500 },
+    ];
+
+    let logIndex = 0;
+
+    function addLog() {
+      if (logIndex >= logs.length) {
+        setTimeout(showWarningPhase, 1500);
+        return;
+      }
+
+      const log = logs[logIndex];
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.innerHTML = log.text;
+      terminalLog.appendChild(line);
+      terminalLog.scrollTop = terminalLog.scrollHeight;
+
+      // Update progress
+      const progress = ((logIndex + 1) / logs.length) * 100;
+      progressFill.style.width = progress + '%';
+
+      logIndex++;
+      setTimeout(addLog, log.delay);
+    }
+
+    // Start the loading phase
+    setTimeout(addLog, 1000);
+
+    // ============================================
+    // PHASE 2: WARNING SCREEN
+    // ============================================
+    async function showWarningPhase() {
+      // Flash effect
+      const flash = document.createElement('div');
+      flash.className = 'flash';
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 300);
+
+      // Vibrate if on phone
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 500]);
+      }
+
+      // Switch phases
+      document.getElementById('phase-loading').style.display = 'none';
+      document.getElementById('phase-warning').style.display = 'block';
+
+      // Fill in device info
+      document.getElementById('device-name').textContent = getDeviceName();
+      document.getElementById('ip-address').textContent = generateFakeIP();
+      document.getElementById('battery-level').textContent = await getBattery();
+
+      // Change particles to red
+      document.querySelectorAll('.particle.green').forEach(p => {
+        p.classList.remove('green');
+      });
+
+      // Start fake countdown
+      startCountdown();
+    }
+
+    // ============================================
+    // FAKE COUNTDOWN
+    // ============================================
+    function startCountdown() {
+      let seconds = 30;
+      const timerEl = document.getElementById('timer');
+
+      const interval = setInterval(() => {
+        seconds--;
+        timerEl.textContent = seconds.toString().padStart(2, '0');
+        
+        if (seconds <= 0) {
+          clearInterval(interval);
+          showRevealPhase();
+        }
+      }, 1000);
+
+      // Also allow clicking anywhere to reveal
+      document.getElementById('phase-warning').addEventListener('click', () => {
+        clearInterval(interval);
+        showRevealPhase();
+      });
+    }
+
+    // ============================================
+    // PHASE 3: REVEAL — IT'S A JOKE!
+    // ============================================
+    function showRevealPhase() {
+      // Flash green
+      const flash = document.createElement('div');
+      flash.className = 'flash';
+      flash.style.background = 'rgba(0, 255, 135, 0.3)';
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 300);
+
+      // Change background
+      document.body.style.background = 'linear-gradient(135deg, #0a0a0a, #001a0a)';
+
+      // Switch phases
+      document.getElementById('phase-warning').style.display = 'none';
+      document.getElementById('phase-reveal').style.display = 'block';
+
+      // Stop matrix from being red
+      canvas.style.opacity = '0.1';
+
+      // Change particles to green
+      document.querySelectorAll('.particle').forEach(p => {
+        p.classList.add('green');
+      });
+
+      // Vibrate celebration
+      if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 100, 50, 100]);
+      }
+
+      // Confetti burst
+      createConfetti();
+    }
+
+    // ============================================
+    // CONFETTI EFFECT
+    // ============================================
+    function createConfetti() {
+      const colors = ['#ff0000', '#00ff87', '#60efff', '#ffbd2e', '#ff6b6b', '#c084fc'];
+      
+      for (let i = 0; i < 80; i++) {
+        const confetti = document.createElement('div');
+        confetti.style.position = 'fixed';
+        confetti.style.width = Math.random() * 10 + 5 + 'px';
+        confetti.style.height = Math.random() * 10 + 5 + 'px';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.top = '-10px';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        confetti.style.zIndex = '1000';
+        confetti.style.pointerEvents = 'none';
+        confetti.style.opacity = Math.random() * 0.8 + 0.2;
+        
+        const duration = Math.random() * 3 + 2;
+        const rotation = Math.random() * 720;
+        const drift = (Math.random() - 0.5) * 200;
+        
+        confetti.style.animation = `confettiFall ${duration}s ease-out forwards`;
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        confetti.style.setProperty('--drift', drift + 'px');
+        confetti.style.setProperty('--rotation', rotation + 'deg');
+        
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), (duration + 1) * 1000);
+      }
+    }
+
+    // Add confetti keyframes dynamically
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes confettiFall {
+        0% { 
+          transform: translateY(0) translateX(0) rotate(0deg); 
+          opacity: 1;
+        }
+        100% { 
+          transform: translateY(100vh) translateX(var(--drift, 0px)) rotate(var(--rotation, 720deg)); 
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

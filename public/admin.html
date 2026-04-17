@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🎮 Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0c0c0f;
+      color: #e8e8ed;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(120, 0, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(0, 200, 255, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(255, 0, 100, 0.05) 0%, transparent 50%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: clamp(12px, 3vw, 24px) clamp(12px, 3vw, 20px) 100px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: clamp(14px, 3vw, 24px) 0 clamp(12px, 2.5vw, 20px);
+    }
+
+    .header-icon {
+      font-size: clamp(36px, 8vw, 48px);
+      margin-bottom: 6px;
+    }
+
+    .header-title {
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 900;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    .header-sub {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* Status Card */
+    .status-card {
+      background: linear-gradient(135deg, rgba(30, 30, 40, 0.9), rgba(20, 20, 30, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: clamp(14px, 3vw, 20px);
+      padding: clamp(14px, 3vw, 24px);
+      margin-top: clamp(14px, 2.5vw, 20px);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: clamp(10px, 2vw, 16px);
+      gap: 8px;
+    }
+
+    .status-label {
+      font-size: clamp(12px, 2.5vw, 14px);
+      color: #888;
+      font-weight: 500;
+    }
+
+    .status-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(11px, 2.3vw, 14px);
+      font-weight: 700;
+      padding: 4px clamp(8px, 2vw, 12px);
+      border-radius: 8px;
+      word-break: break-all;
+      text-align: right;
+    }
+
+    .status-active {
+      color: #34d399;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    .status-inactive {
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    .status-info {
+      color: #60a5fa;
+      background: rgba(96, 165, 250, 0.1);
+      border: 1px solid rgba(96, 165, 250, 0.2);
+    }
+
+    /* Big Toggle Button */
+    .toggle-section {
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    .toggle-btn {
+      position: relative;
+      width: clamp(130px, 35vw, 180px);
+      height: clamp(130px, 35vw, 180px);
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(13px, 3vw, 16px);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .toggle-btn.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 
+        0 0 40px rgba(16, 185, 129, 0.4),
+        0 0 80px rgba(16, 185, 129, 0.15),
+        inset 0 -4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-btn.inactive {
+      background: linear-gradient(135deg, #374151, #1f2937);
+      color: #6b7280;
+      box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.3),
+        inset 0 -4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-btn:active {
+      transform: scale(0.92);
+    }
+
+    .toggle-btn .btn-icon {
+      font-size: clamp(32px, 8vw, 48px);
+      display: block;
+      margin-bottom: clamp(4px, 1vw, 8px);
+    }
+
+    .toggle-btn .btn-text {
+      font-size: clamp(10px, 2.2vw, 13px);
+      display: block;
+    }
+
+    .toggle-ring {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      right: -8px;
+      bottom: -8px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      animation: ringPulse 2s ease-in-out infinite;
+    }
+
+    .toggle-btn.active .toggle-ring {
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    @keyframes ringPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.5; }
+    }
+
+    /* Stats Row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: clamp(6px, 1.5vw, 10px);
+      margin-top: clamp(16px, 3vw, 24px);
+    }
+
+    .stat-card {
+      background: rgba(30, 30, 40, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: clamp(10px, 2.5vw, 16px);
+      padding: clamp(10px, 2.5vw, 16px) clamp(8px, 2vw, 12px);
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-number {
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 900;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: clamp(9px, 2vw, 11px);
+      color: #666;
+      margin-top: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Devices Section */
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 28px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h2 {
+      font-size: clamp(14px, 3vw, 17px);
+      font-weight: 800;
+      color: #e8e8ed;
+    }
+
+    .clear-btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .clear-btn:active {
+      transform: scale(0.95);
+      background: rgba(248, 113, 113, 0.2);
+    }
+
+    .devices-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .device-card {
+      background: rgba(30, 30, 40, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: clamp(10px, 2.5vw, 16px);
+      padding: clamp(12px, 2.5vw, 16px);
+      backdrop-filter: blur(10px);
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .device-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .device-name {
+      font-size: clamp(13px, 2.8vw, 15px);
+      font-weight: 700;
+    }
+
+    .device-hits {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(10px, 2vw, 12px);
+      color: #a78bfa;
+      background: rgba(167, 139, 250, 0.1);
+      padding: 3px clamp(6px, 1.5vw, 10px);
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .device-ip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(10px, 2vw, 12px);
+      color: #666;
+      margin-top: 5px;
+      word-break: break-all;
+    }
+
+    .device-time {
+      font-size: clamp(10px, 2vw, 12px);
+      color: #555;
+      margin-top: 3px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #444;
+    }
+
+    .empty-state .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Quick Actions */
+    .actions {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 2vw, 12px);
+      background: rgba(30, 30, 40, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: clamp(10px, 2.5vw, 14px);
+      padding: clamp(12px, 2.5vw, 16px);
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(12px, 2.5vw, 14px);
+      font-weight: 600;
+      color: #e8e8ed;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .action-btn:active {
+      transform: scale(0.97);
+      background: rgba(40, 40, 55, 0.9);
+    }
+
+    .action-icon {
+      font-size: clamp(18px, 4vw, 24px);
+      width: clamp(36px, 8vw, 44px);
+      height: clamp(36px, 8vw, 44px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: clamp(8px, 2vw, 12px);
+      flex-shrink: 0;
+    }
+
+    .action-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .action-text small {
+      display: block;
+      font-size: clamp(10px, 2vw, 12px);
+      color: #666;
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .action-arrow {
+      color: #444;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    /* Live indicator */
+    .live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #34d399;
+      margin-right: 6px;
+      animation: livePulse 1.5s ease-in-out infinite;
+    }
+
+    .live-dot.off {
+      background: #666;
+      animation: none;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: clamp(10px, 2.5vw, 14px) clamp(16px, 4vw, 24px);
+      font-size: clamp(12px, 2.5vw, 14px);
+      font-weight: 600;
+      color: #e8e8ed;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 1000;
+      white-space: nowrap;
+      max-width: 90vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding: 20px;
+      color: #333;
+      font-size: clamp(10px, 2vw, 12px);
+    }
+
+    /* ==========================================
+       RESPONSIVE MEDIA QUERIES
+       ========================================== */
+
+    /* Small phones (320px - 374px) */
+    @media (max-width: 374px) {
+      .app {
+        padding: 10px 8px 80px;
+      }
+      .toggle-btn {
+        width: 120px;
+        height: 120px;
+      }
+      .toggle-btn .btn-icon {
+        font-size: 28px;
+      }
+      .toggle-btn .btn-text {
+        font-size: 9px;
+        letter-spacing: 1px;
+      }
+      .toggle-ring {
+        top: -5px;
+        left: -5px;
+        right: -5px;
+        bottom: -5px;
+      }
+    }
+
+    /* Tablets and larger (600px+) - two column layout for some sections */
+    @media (min-width: 600px) {
+      .app {
+        max-width: 680px;
+      }
+      .toggle-section {
+        margin-top: 30px;
+      }
+      .devices-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .actions .action-btn:last-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    /* Desktop (900px+) */
+    @media (min-width: 900px) {
+      .app {
+        max-width: 900px;
+        padding: 30px 40px 60px;
+      }
+      .header-title {
+        font-size: 32px;
+      }
+      .stats-row {
+        gap: 16px;
+      }
+      .stat-card {
+        padding: 24px 16px;
+      }
+      .stat-number {
+        font-size: 36px;
+      }
+      .stat-label {
+        font-size: 12px;
+      }
+      .toggle-btn {
+        width: 200px;
+        height: 200px;
+      }
+      .toggle-btn .btn-icon {
+        font-size: 56px;
+      }
+      .toggle-btn .btn-text {
+        font-size: 14px;
+      }
+      .devices-list {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+
+    /* Landscape phones */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .app {
+        padding: 8px 16px 40px;
+      }
+      .header {
+        padding: 8px 0;
+      }
+      .header-icon {
+        font-size: 28px;
+        margin-bottom: 4px;
+      }
+      .toggle-section {
+        margin-top: 12px;
+      }
+      .toggle-btn {
+        width: 100px;
+        height: 100px;
+      }
+      .toggle-btn .btn-icon {
+        font-size: 28px;
+        margin-bottom: 2px;
+      }
+      .toggle-btn .btn-text {
+        font-size: 8px;
+      }
+      .toggle-ring {
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
+      }
+      .stats-row {
+        margin-top: 12px;
+      }
+      .stat-card {
+        padding: 8px 6px;
+      }
+      .stat-number {
+        font-size: 18px;
+      }
+    }
+
+    /* Safe area for notched phones (iPhone X+) */
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+      .toast {
+        bottom: calc(30px + env(safe-area-inset-bottom));
+      }
+      .app {
+        padding-bottom: calc(80px + env(safe-area-inset-bottom));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-icon">🎮</div>
+      <h1 class="header-title">Prank Panel</h1>
+      <p class="header-sub"><span class="live-dot" id="live-dot"></span> <span id="connection-status">Ulanmoqda...</span></p>
+    </div>
+
+    <!-- Big Toggle -->
+    <div class="toggle-section">
+      <button class="toggle-btn active" id="toggle-btn" onclick="togglePortal()">
+        <div class="toggle-ring"></div>
+        <span class="btn-icon" id="btn-icon">😈</span>
+        <span class="btn-text" id="btn-text">YOQILGAN</span>
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-number" id="device-count">0</div>
+        <div class="stat-label">Qurilma</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="hit-count">0</div>
+        <div class="stat-label">Kirish</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="uptime">0s</div>
+        <div class="stat-label">Ishlash</div>
+      </div>
+    </div>
+
+    <!-- Status Info -->
+    <div class="status-card" id="status-card">
+      <div class="status-row">
+        <span class="status-label">Holat</span>
+        <span class="status-value status-active" id="portal-status">✅ Faol</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Server IP</span>
+        <span class="status-value status-info" id="server-ip">...</span>
+      </div>
+      <div class="status-row" style="margin-bottom: 0">
+        <span class="status-label">Port</span>
+        <span class="status-value status-info" id="server-port">...</span>
+      </div>
+    </div>
+
+    <!-- Connected Devices -->
+    <div class="section-title">
+      <h2>📡 Ulangan qurilmalar</h2>
+      <button class="clear-btn" onclick="clearDevices()">Tozalash</button>
+    </div>
+
+    <div class="devices-list" id="devices-list">
+      <div class="empty-state">
+        <div class="empty-icon">📱</div>
+        <p>Hali qurilma ulanmagan</p>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section-title" style="margin-bottom: 12px">
+      <h2>⚡ Tezkor amallar</h2>
+    </div>
+
+    <div class="actions">
+      <a class="action-btn" href="/" target="_blank">
+        <div class="action-icon">👁️</div>
+        <div class="action-text">
+          Portal sahifasini ko'rish
+          <small>Qurbon nima ko'rishini ko'ring</small>
+        </div>
+        <span class="action-arrow">›</span>
+      </a>
+      <button class="action-btn" onclick="shareIP()">
+        <div class="action-icon">📋</div>
+        <div class="action-text">
+          IP manzilni nusxalash
+          <small>Do'stga WiFi IP ni yuboring</small>
+        </div>
+        <span class="action-arrow">›</span>
+      </button>
+      <button class="action-btn" onclick="toggleFullscreen()">
+        <div class="action-icon">📺</div>
+        <div class="action-text">
+          To'liq ekran
+          <small>Admin panelni kattalashtirish</small>
+        </div>
+        <span class="action-arrow">›</span>
+      </button>
+    </div>
+
+    <div class="footer">
+      WiFi Prank Portal v1.0 — Hazil uchun yaratilgan 😈
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const POLL_INTERVAL = 2000;
+    let isActive = true;
+
+    // ============================================
+    // API
+    // ============================================
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        updateUI(data);
+        document.getElementById('connection-status').textContent = 'Jonli ulanish';
+        document.getElementById('live-dot').classList.remove('off');
+      } catch (e) {
+        document.getElementById('connection-status').textContent = 'Ulanish yo\'q';
+        document.getElementById('live-dot').classList.add('off');
+      }
+    }
+
+    async function togglePortal() {
+      try {
+        const res = await fetch('/api/toggle', { method: 'POST' });
+        const data = await res.json();
+        isActive = data.active;
+
+        // Vibrate feedback
+        if (navigator.vibrate) navigator.vibrate(50);
+
+        showToast(isActive ? '😈 Portal yoqildi!' : '😴 Portal o\'chirildi');
+        fetchStatus();
+      } catch (e) {
+        showToast('❌ Xatolik yuz berdi');
+      }
+    }
+
+    async function clearDevices() {
+      try {
+        await fetch('/api/clear-devices', { method: 'POST' });
+        if (navigator.vibrate) navigator.vibrate(30);
+        showToast('🧹 Ro\'yxat tozalandi');
+        fetchStatus();
+      } catch (e) {
+        showToast('❌ Xatolik');
+      }
+    }
+
+    // ============================================
+    // UI UPDATE
+    // ============================================
+    function updateUI(data) {
+      isActive = data.active;
+
+      // Toggle button
+      const btn = document.getElementById('toggle-btn');
+      const btnIcon = document.getElementById('btn-icon');
+      const btnText = document.getElementById('btn-text');
+
+      if (isActive) {
+        btn.className = 'toggle-btn active';
+        btnIcon.textContent = '😈';
+        btnText.textContent = 'YOQILGAN';
+      } else {
+        btn.className = 'toggle-btn inactive';
+        btnIcon.textContent = '😴';
+        btnText.textContent = 'O\'CHIRILGAN';
+      }
+
+      // Status
+      const portalStatus = document.getElementById('portal-status');
+      if (isActive) {
+        portalStatus.textContent = '✅ Faol';
+        portalStatus.className = 'status-value status-active';
+      } else {
+        portalStatus.textContent = '⏸️ To\'xtatilgan';
+        portalStatus.className = 'status-value status-inactive';
+      }
+
+      // Server info
+      document.getElementById('server-ip').textContent = data.ip;
+      document.getElementById('server-port').textContent = data.port;
+
+      // Stats
+      const totalHits = data.devices.reduce((sum, d) => sum + d.hits, 0);
+      document.getElementById('device-count').textContent = data.devices.length;
+      document.getElementById('hit-count').textContent = totalHits;
+      document.getElementById('uptime').textContent = formatUptime(data.uptime);
+
+      // Devices list
+      const list = document.getElementById('devices-list');
+      if (data.devices.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📱</div>
+            <p>Hali qurilma ulanmagan</p>
+          </div>
+        `;
+      } else {
+        list.innerHTML = data.devices.map(d => `
+          <div class="device-card">
+            <div class="device-header">
+              <span class="device-name">${d.device}</span>
+              <span class="device-hits">${d.hits} hit</span>
+            </div>
+            <div class="device-ip">IP: ${d.ip}</div>
+            <div class="device-time">Birinchi: ${d.firstSeen} · Oxirgi: ${d.lastSeen}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function formatUptime(seconds) {
+      if (seconds < 60) return seconds + 's';
+      if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
+      return Math.floor(seconds / 3600) + 'h ' + Math.floor((seconds % 3600) / 60) + 'm';
+    }
+
+    // ============================================
+    // ACTIONS
+    // ============================================
+    function shareIP() {
+      const ip = document.getElementById('server-ip').textContent;
+      const url = `http://${ip}:${document.getElementById('server-port').textContent}`;
+      
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url);
+        showToast('📋 Nusxalandi: ' + url);
+      } else if (navigator.share) {
+        navigator.share({ title: 'WiFi Portal', url });
+      } else {
+        showToast('📋 ' + url);
+      }
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+
+    // ============================================
+    // TOAST
+    // ============================================
+    let toastTimeout;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // ============================================
+    // INIT
+    // ============================================
+    fetchStatus();
+    setInterval(fetchStatus, POLL_INTERVAL);
+  </script>
+</body>
+</html>
